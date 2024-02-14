@@ -1,0 +1,135 @@
+{
+    "asset" : {
+        "generator" : "Khronos glTF Blender I/O v1.4.40",
+        "version" : "2.0"
+    },
+    "extensionsUsed" : [
+        "KHR_materials_transmission"
+    ],
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Scene",
+            "nodes" : [
+                0
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "mesh" : 0,
+            "name" : "r",
+            "scale" : [
+                67.0620346069336,
+                19.283103942871094,
+                67.0620346069336
+            ],
+            "translation" : [
+                0.00018316321074962616,
+                0,
+                0.0005459021776914597
+            ]
+        }
+    ],
+    "materials" : [
+        {
+            "doubleSided" : true,
+            "extensions" : {
+                "KHR_materials_transmission" : {
+                    "transmissionFactor" : 0.19148936867713928
+                }
+            },
+            "name" : "Material.001",
+            "pbrMetallicRoughness" : {
+                "baseColorFactor" : [
+                    0,
+                    0,
+                    0,
+                    1
+                ],
+                "metallicFactor" : 0.07092198729515076,
+                "roughnessFactor" : 0.8085106015205383
+            }
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "r.001",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 0,
+                        "NORMAL" : 1,
+                        "TEXCOORD_0" : 2
+                    },
+                    "indices" : 3,
+                    "material" : 0
+                }
+            ]
+        }
+    ],
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5126,
+            "count" : 272107,
+            "max" : [
+                0.014186037704348564,
+                0.01000000350177288,
+                0.013904964551329613
+            ],
+            "min" : [
+                -0.014599155634641647,
+                -0.010000002570450306,
+                -0.014874156564474106
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "count" : 272107,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 2,
+            "componentType" : 5126,
+            "count" : 272107,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 3,
+            "componentType" : 5125,
+            "count" : 622677,
+            "type" : "SCALAR"
+        }
+    ],
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 3265284,
+            "byteOffset" : 0
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 3265284,
+            "byteOffset" : 3265284
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 2176856,
+            "byteOffset" : 6530568
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 2490708,
+            "byteOffset" : 8707424
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 11198132,
+            "uri" : "rust_cog.bin"
+        }
+    ]
+}

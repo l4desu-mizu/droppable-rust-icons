@@ -68,8 +68,7 @@ fn spawn_transparent_plane(
 
 fn spawn_gears(
     mut commands: Commands,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut mesh: ResMut<Assets<Mesh>>,
+    asset_server: Res<AssetServer>,
     mut mouse: EventReader<MouseButtonInput>,
     window: Query<&Window>,
     camera: Query<(&Camera, &GlobalTransform)>,
@@ -91,17 +90,8 @@ fn spawn_gears(
                 .expect("These should intersect");
             let point = ray.get_point(distance);
             commands.spawn((
-                PbrBundle {
-                    mesh: mesh.add(
-                        shape::Cylinder {
-                            radius: 1.0,
-                            height: 1.0,
-                            resolution: 50,
-                            segments: 100,
-                        }
-                        .into(),
-                    ),
-                    material: materials.add(Color::GRAY.into()),
+                SceneBundle {
+                    scene: asset_server.load("rust_cog.gltf#Scene0"),
                     transform: Transform::from_translation(point + Vec3::Y * 10.0),
                     ..default()
                 },
