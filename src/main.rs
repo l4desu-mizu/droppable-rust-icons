@@ -37,7 +37,7 @@ fn add_camera(mut commands: Commands) {
 }
 
 fn change_hit_test(
-    input: Res<Input<KeyCode>>,
+    input: Res<ButtonInput<KeyCode>>,
     mut camera: Query<&mut Window, With<PrimaryWindow>>,
 ) {
     if input.just_pressed(KeyCode::Space) {
@@ -56,8 +56,8 @@ fn spawn_transparent_plane(
 ) {
     commands.spawn((
         PbrBundle {
-            mesh: mesh.add(shape::Plane::from_size(50.0).into()),
-            material: materials.add(Color::NONE.into()),
+            mesh: mesh.add(Plane3d::new(Vec3::Y).mesh()),
+            material: materials.add(StandardMaterial::from(Color::NONE)),
             ..default()
         },
         Ground,
@@ -82,11 +82,12 @@ fn spawn_gears(
                 .expect("Where did the cursor go we just clicked.");
             let (cam, transform) = camera.single();
             let ground = ground.single();
+            let ground_plane = Plane3d::new(Vec3::Y);
             let ray = cam
                 .viewport_to_world(transform, cursor_position)
                 .expect("Your viewport is misconfigured, mate.");
             let distance = ray
-                .intersect_plane(ground.translation(), ground.up())
+                .intersect_plane(ground.translation(), ground_plane)
                 .expect("These should intersect");
             let point = ray.get_point(distance);
             commands.spawn((
