@@ -1,7 +1,14 @@
 use bevy::prelude::*;
 use bevy::window::{Cursor, WindowLevel, WindowMode};
 use bevy_rapier3d::prelude::*;
-use rand::{Rng, thread_rng};
+use rand::{thread_rng, Rng};
+use std::time::Duration;
+
+#[derive(Event)]
+struct DropNow;
+
+#[derive(Resource)]
+struct Timed(Timer);
 
 fn main() {
     App::new()
@@ -22,15 +29,31 @@ fn main() {
             }),
             RapierPhysicsPlugin::<NoUserData>::default(),
         ))
+        .add_event::<DropNow>()
         .insert_resource(ClearColor(Color::NONE))
-        .insert_resource(Gears(100))
-        .add_systems(Startup,(
-            add_camera
-                .before(spawn_transparent_plane),
-            spawn_transparent_plane.before(spawn_gears),
-            spawn_gears
-        ))
+        .insert_resource(Gears(50))
+        .insert_resource(Timed(Timer::new(
+            Duration::from_millis(5),
+            TimerMode::Repeating,
+        )))
+        .add_systems(Startup, (add_camera, spawn_transparent_plane))
+        .add_systems(
+            Update,
+            (send_event, spawn_gears.run_if(on_event::<DropNow>())),
+        )
         .run();
+}
+
+fn send_event(
+    mut timer: ResMut<Timed>,
+    time: Res<Time>,
+    mut gears: ResMut<Gears>,
+    mut drop_now: EventWriter<DropNow>,
+) {
+    if gears.0 > 0 && timer.0.tick(time.delta()).finished() {
+        drop_now.send(DropNow);
+        gears.0 -= 1;
+    }
 }
 
 fn add_camera(mut commands: Commands) {
@@ -56,6 +79,7 @@ fn spawn_transparent_plane(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut mesh: ResMut<Assets<Mesh>>,
 ) {
+    let plane_size = 500.0;
     commands.spawn((
         PbrBundle {
             mesh: mesh.add(Plane3d::new(Vec3::Y).mesh()),
@@ -63,7 +87,7 @@ fn spawn_transparent_plane(
             ..default()
         },
         Ground,
-        Collider::cuboid(25.0, 0.1, 25.0),
+        Collider::cuboid(plane_size / 2.0, 0.1, plane_size / 2.0),
         RigidBody::Fixed,
     ));
 }
@@ -71,38 +95,34 @@ fn spawn_transparent_plane(
 fn spawn_gears(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    gears: Res<Gears>,
     window: Query<&Window>,
     camera: Query<(&Camera, &GlobalTransform)>,
     ground: Query<&GlobalTransform, With<Ground>>,
 ) {
     let mut rng = thread_rng();
-    for _ in 0..gears.0 {
-        let windows_res = window
-            .single().resolution.clone();
-        let cursor_position = Vec2::new(
-            rng.gen_range(0.0..windows_res.width()),
-            rng.gen_range(0.0..windows_res.height()),
-        );
-        println!("{:?}", cursor_position);
-        let (cam, transform) = camera.single();
-        let ground = ground.single();
-        let ground_plane = Plane3d::new(Vec3::Y);
-        let ray = cam
-            .viewport_to_world(transform, cursor_position)
-            .expect("Your viewport is misconfigured, mate.");
-        let distance = ray
-            .intersect_plane(ground.translation(), ground_plane)
-            .expect("These should intersect");
-        let point = ray.get_point(distance);
-        commands.spawn((
-            SceneBundle {
-                scene: asset_server.load("rust_cog.gltf#Scene0"),
-                transform: Transform::from_translation(point + Vec3::Y * 10.0),
-                ..default()
-            },
-            Collider::cylinder(0.5, 1.0),
-            RigidBody::Dynamic,
-        ));
-    }
+    let window = window.single();
+    let windows_res = window.resolution.clone();
+    let drop_position = Vec2::new(
+        rng.gen_range(200.0..windows_res.width() - 200.0),
+        rng.gen_range(100.0..windows_res.height() - 100.0),
+    );
+    let (cam, transform) = camera.single();
+    let ground = ground.single();
+    let ground_plane = Plane3d::new(Vec3::Y);
+    let ray = cam
+        .viewport_to_world(transform, drop_position)
+        .expect("Your viewport is misconfigured, mate.");
+    let distance = ray
+        .intersect_plane(ground.translation(), ground_plane)
+        .expect("These should intersect");
+    let point = ray.get_point(distance);
+    commands.spawn((
+        SceneBundle {
+            scene: asset_server.load("rust_cog.gltf#Scene0"),
+            transform: Transform::from_translation(point + Vec3::Y * 10.0),
+            ..default()
+        },
+        Collider::cylinder(0.5, 1.0),
+        RigidBody::Dynamic,
+    ));
 }
