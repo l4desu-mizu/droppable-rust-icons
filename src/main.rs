@@ -1,14 +1,10 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use bevy::prelude::*;
 use bevy::window::{Cursor, WindowLevel, WindowMode};
 use bevy_rapier3d::prelude::*;
 use rand::{thread_rng, Rng};
 use std::time::Duration;
-
-#[derive(Event)]
-struct DropNow;
-
-#[derive(Resource)]
-struct Timed(Timer);
 
 fn main() {
     App::new()
@@ -43,6 +39,12 @@ fn main() {
         )
         .run();
 }
+
+#[derive(Event)]
+struct DropNow;
+
+#[derive(Resource)]
+struct Timed(Timer);
 
 fn send_event(
     mut timer: ResMut<Timed>,
