@@ -1,12 +1,20 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
 use bevy::prelude::*;
 use bevy::window::{Cursor, WindowLevel, WindowMode};
 use bevy_rapier3d::prelude::*;
+use bevy_rapier3d::rapier::crossbeam;
+use crossbeam::channel::{bounded, Receiver};
 use rand::{thread_rng, Rng};
+use std::io::stdin;
+use std::thread;
 use std::time::Duration;
 
 fn main() {
+    let (sender, receiver) = bounded::<bool>(1);
+    thread::spawn(move || {
+        let mut buf = String::new();
+        stdin().read_line(&mut buf).expect("Failed to read io");
+        sender.send(true).expect("Failed to send start signal");
+    });
     App::new()
         .add_plugins((
             DefaultPlugins.set(WindowPlugin {
@@ -28,6 +36,8 @@ fn main() {
         .add_event::<DropNow>()
         .insert_resource(ClearColor(Color::NONE))
         .insert_resource(Gears(50))
+        .insert_resource(Go(false))
+        .insert_resource(StartReceiver(receiver))
         .insert_resource(Timed(Timer::new(
             Duration::from_millis(5),
             TimerMode::Repeating,
@@ -35,10 +45,20 @@ fn main() {
         .add_systems(Startup, (add_camera, spawn_transparent_plane))
         .add_systems(
             Update,
-            (send_event, spawn_gears.run_if(on_event::<DropNow>())),
+            (
+                send_event.run_if(resource_equals(Go(true))),
+                trigger_run,
+                spawn_gears.run_if(on_event::<DropNow>()),
+            ),
         )
         .run();
 }
+
+#[derive(Resource, PartialEq)]
+struct Go(bool);
+
+#[derive(Resource)]
+struct StartReceiver<T>(Receiver<T>);
 
 #[derive(Event)]
 struct DropNow;
@@ -46,13 +66,19 @@ struct DropNow;
 #[derive(Resource)]
 struct Timed(Timer);
 
+fn trigger_run(mut go_res: ResMut<Go>, start_receiver: Res<StartReceiver<bool>>) {
+    if let Ok(start) = start_receiver.0.try_recv() {
+        go_res.0 = start;
+    }
+}
+
 fn send_event(
     mut timer: ResMut<Timed>,
     time: Res<Time>,
     mut gears: ResMut<Gears>,
     mut drop_now: EventWriter<DropNow>,
 ) {
-    if gears.0 > 0 && timer.0.tick(time.delta()).finished() {
+    if gears.0 > 0 && timer.0.tick(time.delta()).just_finished() {
         drop_now.send(DropNow);
         gears.0 -= 1;
     }
