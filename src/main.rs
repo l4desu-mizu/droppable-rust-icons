@@ -34,9 +34,9 @@ fn main() {
             RapierPhysicsPlugin::<NoUserData>::default(),
         ))
         .add_event::<DropNow>()
+        .init_state::<DropState>()
         .insert_resource(ClearColor(Color::NONE))
         .insert_resource(Gears(50))
-        .insert_resource(Go(false))
         .insert_resource(StartReceiver(receiver))
         .insert_resource(Timed(Timer::new(
             Duration::from_millis(5),
@@ -46,16 +46,20 @@ fn main() {
         .add_systems(
             Update,
             (
-                send_event.run_if(resource_equals(Go(true))),
-                trigger_run,
-                spawn_gears.run_if(on_event::<DropNow>()),
+                handle_state_change.run_if(in_state(DropState::Disabled)),
+                send_event.run_if(in_state(DropState::Enabled)),
             ),
         )
+        .observe(spawn_gears)
         .run();
 }
 
-#[derive(Resource, PartialEq)]
-struct Go(bool);
+#[derive(States, Clone, Eq, PartialEq, Hash, Debug, Default)]
+enum DropState {
+    Enabled,
+    #[default]
+    Disabled,
+}
 
 #[derive(Resource)]
 struct StartReceiver<T>(Receiver<T>);
@@ -66,9 +70,12 @@ struct DropNow;
 #[derive(Resource)]
 struct Timed(Timer);
 
-fn trigger_run(mut go_res: ResMut<Go>, start_receiver: Res<StartReceiver<bool>>) {
-    if let Ok(start) = start_receiver.0.try_recv() {
-        go_res.0 = start;
+fn handle_state_change(
+    mut next_state: ResMut<NextState<DropState>>,
+    start_receiver: Res<StartReceiver<bool>>,
+) {
+    if let Ok(_start) = start_receiver.0.try_recv() {
+        next_state.set(DropState::Enabled);
     }
 }
 
@@ -110,7 +117,7 @@ fn spawn_transparent_plane(
     let plane_size = 500.0;
     commands.spawn((
         PbrBundle {
-            mesh: mesh.add(Plane3d::new(Vec3::Y).mesh()),
+            mesh: mesh.add(Plane3d::new(Vec3::Y, Vec2::splat(100.0)).mesh()),
             material: materials.add(StandardMaterial::from(Color::NONE)),
             ..default()
         },
@@ -121,6 +128,7 @@ fn spawn_transparent_plane(
 }
 
 fn spawn_gears(
+    _: Trigger<DropNow>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     window: Query<&Window>,
@@ -136,7 +144,7 @@ fn spawn_gears(
     );
     let (cam, transform) = camera.single();
     let ground = ground.single();
-    let ground_plane = Plane3d::new(Vec3::Y);
+    let ground_plane = InfinitePlane3d::new(Vec3::Y);
     let ray = cam
         .viewport_to_world(transform, drop_position)
         .expect("Your viewport is misconfigured, mate.");
