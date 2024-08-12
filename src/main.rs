@@ -83,10 +83,10 @@ fn send_event(
     mut timer: ResMut<Timed>,
     time: Res<Time>,
     mut gears: ResMut<Gears>,
-    mut drop_now: EventWriter<DropNow>,
+    mut commands: Commands,
 ) {
     if gears.0 > 0 && timer.0.tick(time.delta()).just_finished() {
-        drop_now.send(DropNow);
+        commands.trigger(DropNow);
         gears.0 -= 1;
     }
 }
