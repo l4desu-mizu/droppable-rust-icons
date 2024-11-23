@@ -1,7 +1,6 @@
 use bevy::prelude::*;
-use bevy::window::{Cursor, WindowLevel, WindowMode};
-use bevy_rapier3d::prelude::*;
-use bevy_rapier3d::rapier::crossbeam;
+use bevy::window::{CursorOptions, WindowLevel, WindowMode};
+use avian3d::prelude::*;
 use crossbeam::channel::{bounded, Receiver};
 use rand::{thread_rng, Rng};
 use std::io::stdin;
@@ -21,17 +20,18 @@ fn main() {
                 primary_window: Some(Window {
                     title: "Rust Icon Dropper".to_string(),
                     transparent: true,
-                    cursor: Cursor {
+                    cursor_options: CursorOptions {
                         hit_test: false,
                         ..default()
                     },
-                    mode: WindowMode::BorderlessFullscreen,
+                    mode: WindowMode::BorderlessFullscreen(MonitorSelection::Current),
                     window_level: WindowLevel::AlwaysOnTop,
                     ..default()
                 }),
                 ..default()
             }),
-            RapierPhysicsPlugin::<NoUserData>::default(),
+            PhysicsPlugins::default()
+            //RapierPhysicsPlugin::<NoUserData>::default(),
         ))
         .add_event::<DropNow>()
         .init_state::<DropState>()
@@ -50,7 +50,7 @@ fn main() {
                 send_event.run_if(in_state(DropState::Enabled)),
             ),
         )
-        .observe(spawn_gears)
+        .add_observer(spawn_gears)
         .run();
 }
 
@@ -92,15 +92,15 @@ fn send_event(
 }
 
 fn add_camera(mut commands: Commands) {
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_translation(Vec3::new(0.0, 10.0, 10.0))
+    commands.spawn((
+        Transform::from_translation(Vec3::new(0.0, 10.0, 10.0))
             .looking_at(Vec3::ZERO, Vec3::Y),
-        ..default()
-    });
-    commands.spawn(PointLightBundle {
-        transform: Transform::from_translation(Vec3::Y * 10.0),
-        ..default()
-    });
+        Camera3d::default()
+    ));
+    commands.spawn((
+        Transform::from_translation(Vec3::Y * 10.0),
+        PointLight::default()
+    ));
 }
 
 #[derive(Resource)]
@@ -116,14 +116,11 @@ fn spawn_transparent_plane(
 ) {
     let plane_size = 500.0;
     commands.spawn((
-        PbrBundle {
-            mesh: mesh.add(Plane3d::new(Vec3::Y, Vec2::splat(100.0)).mesh()),
-            material: materials.add(StandardMaterial::from(Color::NONE)),
-            ..default()
-        },
+        Mesh3d(mesh.add(Plane3d::new(Vec3::Y, Vec2::splat(100.0)).mesh())),
+        MeshMaterial3d(materials.add(StandardMaterial::from(Color::NONE))),
         Ground,
         Collider::cuboid(plane_size / 2.0, 0.1, plane_size / 2.0),
-        RigidBody::Fixed,
+        RigidBody::Static,
     ));
 }
 
@@ -153,11 +150,8 @@ fn spawn_gears(
         .expect("These should intersect");
     let point = ray.get_point(distance);
     commands.spawn((
-        SceneBundle {
-            scene: asset_server.load("rust_cog.gltf#Scene0"),
-            transform: Transform::from_translation(point + Vec3::Y * 10.0),
-            ..default()
-        },
+        SceneRoot(asset_server.load("rust_cog.gltf#Scene0")),
+        Transform::from_translation(point + Vec3::Y * 10.0),
         Collider::cylinder(0.5, 1.0),
         RigidBody::Dynamic,
     ));
