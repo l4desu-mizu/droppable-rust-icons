@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy::window::{CursorOptions, WindowLevel, WindowMode};
-use avian3d::prelude::*;
+use bevy_rapier3d::prelude::*;
 use crossbeam::channel::{bounded, Receiver};
 use rand::{thread_rng, Rng};
 use std::io::stdin;
@@ -30,8 +30,8 @@ fn main() {
                 }),
                 ..default()
             }),
-            PhysicsPlugins::default()
-            //RapierPhysicsPlugin::<NoUserData>::default(),
+            //PhysicsPlugins::default()
+            RapierPhysicsPlugin::<NoUserData>::default(),
         ))
         .add_event::<DropNow>()
         .init_state::<DropState>()
@@ -120,7 +120,7 @@ fn spawn_transparent_plane(
         MeshMaterial3d(materials.add(StandardMaterial::from(Color::NONE))),
         Ground,
         Collider::cuboid(plane_size / 2.0, 0.1, plane_size / 2.0),
-        RigidBody::Static,
+        RigidBody::Fixed,
     ));
 }
 
