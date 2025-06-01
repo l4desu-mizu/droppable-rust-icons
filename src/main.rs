@@ -133,14 +133,14 @@ fn spawn_gears(
     ground: Query<&GlobalTransform, With<Ground>>,
 ) {
     let mut rng = thread_rng();
-    let window = window.single();
+    let window = window.single().expect("There should be a window");
     let windows_res = window.resolution.clone();
     let drop_position = Vec2::new(
         rng.gen_range(200.0..windows_res.width() - 200.0),
         rng.gen_range(100.0..windows_res.height() - 100.0),
     );
-    let (cam, transform) = camera.single();
-    let ground = ground.single();
+    let (cam, transform) = camera.single().expect("There should be a camera with a transform");
+    let ground = ground.single().expect("Did you forget to spawn the ground?");
     let ground_plane = InfinitePlane3d::new(Vec3::Y);
     let ray = cam
         .viewport_to_world(transform, drop_position)
